@@ -1,7 +1,7 @@
 // MILANO CAFE - Public Menu Handler
 
 // Config - Replace with your Cloudflare Worker URL when deployed if running across domains
-const WORKER_API_ENDPOINT = '/api/menu';
+const WORKER_API_ENDPOINT = 'https://milano-menu-api.milanoo-cafe7.workers.dev/api/menu';
 
 // Translation Dictionaries
 const translations = {
