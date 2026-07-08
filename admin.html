@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ميلانو كافيه | لوحة التحكم</title>
+    
+    <!-- Bootstrap 5 RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        body { background-color: #f4efeb; font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .admin-nav { background-color: var(--color-primary); }
+        .text-accent { color: var(--color-accent); }
+        .bg-accent { background-color: var(--color-accent) !important; }
+        .border-accent { border-color: var(--color-accent) !important; }
+        .nav-tabs .nav-link { color: #666; font-weight: 600; font-size: 0.9rem; }
+        .nav-tabs .nav-link.active { color: var(--color-accent); border-bottom: 2px solid var(--color-accent); background: transparent; }
+        .category-pill { display: inline-flex; align-items: center; gap: 0.5rem; background: #f8f5f0; border: 1px solid rgba(197,160,89,0.2); padding: 0.5rem 1rem; border-radius: 25px; margin: 0.25rem; }
+        .category-pill .del-btn { background: none; border: none; color: #999; cursor: pointer; padding: 0; font-size: 0.8rem; transition: color 0.2s; }
+        .category-pill .del-btn:hover { color: #dc3545; }
+        .category-pill .edit-btn { background: none; border: none; color: #999; cursor: pointer; padding: 0; font-size: 0.8rem; transition: color 0.2s; }
+        .category-pill .edit-btn:hover { color: var(--color-accent); }
+    </style>
+</head>
+<body>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-container" class="container min-vh-100 d-flex align-items-center justify-content-center">
+        <div class="card admin-login-card w-100" style="max-width: 450px;">
+            <div class="admin-header-bg">
+                <img src="logo.jpeg" alt="ميلانو كافيه" class="hero-logo mb-2" style="width: 70px; height: 70px;" onerror="this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=300&auto=format&fit=crop'">
+                <h3 class="mb-0">MILANO CAFE</h3>
+                <small class="text-accent text-uppercase">لوحة تحكم الإدارة</small>
+            </div>
+            <div class="card-body p-4">
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label small text-muted fw-semibold">البريد الإلكتروني</label>
+                        <input type="email" class="form-control form-control-lg rounded-0" id="login-email" required placeholder="admin@milanocafe.com" dir="ltr">
+                    </div>
+                    <div class="mb-4">
+                        <label for="login-password" class="form-label small text-muted fw-semibold">كلمة المرور</label>
+                        <input type="password" class="form-control form-control-lg rounded-0" id="login-password" required placeholder="••••••••" dir="ltr">
+                    </div>
+                    <button type="submit" class="btn btn-premium w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                        <span>تسجيل الدخول</span>
+                        <div class="spinner-border spinner-border-sm d-none" id="login-spinner"></div>
+                    </button>
+                    <div id="login-error" class="alert alert-danger mt-3 d-none small"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم الرئيسية -->
+    <div id="dashboard-container" class="d-none">
+        
+        <!-- شريط التنقل -->
+        <nav class="navbar navbar-expand-lg navbar-dark admin-nav px-3 py-3">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                    <img src="logo.jpeg" alt="ميلانو كافيه" class="rounded-circle border border-accent" style="width: 40px; height: 40px;" onerror="this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=300&auto=format&fit=crop'">
+                    <span class="brand-font fs-4">MILANO CAFE</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="adminNavbar">
+                    <ul class="navbar-nav me-auto align-items-center gap-3">
+                        <li class="nav-item">
+                            <span class="text-white small" id="admin-user-email">admin@milanocafe.com</span>
+                        </li>
+                        <li class="nav-item">
+                            <button id="logout-btn" class="btn btn-outline-danger btn-sm rounded-0 px-3">تسجيل الخروج</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="container my-5">
+
+            <!-- بانر النشر -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm p-4 bg-white d-flex flex-row justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h4 class="mb-1 fw-bold text-dark">إدارة قائمة الطعام</h4>
+                            <p class="text-muted small mb-0">التعديلات هنا تُحدَّث مباشرة في Firestore. اضغط "نشر القائمة" لتحديث ذاكرة Cloudflare.</p>
+                        </div>
+                        <button id="publish-menu-btn" class="btn btn-premium d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>نشر القائمة (مسح الكاش)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تبويبات القسم -->
+            <ul class="nav nav-tabs border-bottom mb-4" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-panel" type="button" role="tab">
+                        <i class="fa-solid fa-mug-hot me-1"></i> المنتجات
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories-panel" type="button" role="tab">
+                        <i class="fa-solid fa-tags me-1"></i> الأقسام
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="adminTabContent">
+
+                <!-- ===== تبويب المنتجات ===== -->
+                <div class="tab-pane fade show active" id="products-panel" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- الشريط الجانبي -->
+                        <div class="col-lg-3">
+                            <div class="card border-0 shadow-sm bg-white p-3 mb-4">
+                                <h5 class="fw-bold text-dark mb-3">الأدوات</h5>
+                                <button class="btn btn-premium w-100 py-3 mb-3 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#productModal" onclick="openAddProductModal()">
+                                    <i class="fa-solid fa-plus"></i>
+                                    <span>إضافة منتج جديد</span>
+                                </button>
+                                <div class="list-group list-group-flush small" id="admin-category-filters"></div>
+                            </div>
+                        </div>
+
+                        <!-- جدول المنتجات -->
+                        <div class="col-lg-9">
+                            <div class="card border-0 shadow-sm bg-white p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                                    <h5 class="fw-bold text-dark mb-0" id="products-list-title">جميع المنتجات</h5>
+                                    <div class="input-group" style="max-width: 250px;">
+                                        <span class="input-group-text bg-transparent border-end-0"><i class="fa fa-search text-muted"></i></span>
+                                        <input type="text" id="admin-search" class="form-control border-start-0" placeholder="بحث..." oninput="filterAdminProducts(this.value)">
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle admin-table text-nowrap">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>الصورة</th>
+                                                <th>الاسم (عربي / إنجليزي)</th>
+                                                <th>القسم</th>
+                                                <th>السعر</th>
+                                                <th>الحالة</th>
+                                                <th class="text-start">الإجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="products-table-body">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4">
+                                                    <div class="spinner-border text-warning" role="status"></div>
+                                                    <p class="mt-2 text-muted mb-0">جارٍ تحميل المنتجات...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== تبويب الأقسام ===== -->
+                <div class="tab-pane fade" id="categories-panel" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- إضافة قسم جديد -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm bg-white p-4">
+                                <h5 class="fw-bold text-dark mb-4">
+                                    <i class="fa-solid fa-plus-circle text-accent me-2"></i>إضافة قسم جديد
+                                </h5>
+                                <form id="category-form">
+                                    <input type="hidden" id="category-edit-id">
+                                    <div class="mb-3">
+                                        <label for="cat-name-ar" class="form-label small fw-semibold text-muted">اسم القسم بالعربية</label>
+                                        <input type="text" class="form-control" id="cat-name-ar" required placeholder="مثال: قهوة">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="cat-name-en" class="form-label small fw-semibold text-muted">اسم القسم بالإنجليزية</label>
+                                        <input type="text" class="form-control" id="cat-name-en" required placeholder="e.g. Coffee" dir="ltr">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="cat-slug" class="form-label small fw-semibold text-muted">المعرّف (Slug) — يُستخدم داخلياً</label>
+                                        <input type="text" class="form-control" id="cat-slug" required placeholder="coffee" dir="ltr">
+                                        <div class="form-text">حروف إنجليزية صغيرة وشُرَط فقط، مثال: <code>hot-drinks</code></div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-premium flex-grow-1 d-flex align-items-center justify-content-center gap-2" id="save-category-btn">
+                                            <span id="cat-btn-label">حفظ القسم</span>
+                                            <div class="spinner-border spinner-border-sm d-none" id="cat-spinner"></div>
+                                        </button>
+                                        <button type="button" class="btn btn-light" id="cancel-edit-cat-btn" onclick="resetCategoryForm()" style="display:none;">إلغاء</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- قائمة الأقسام -->
+                        <div class="col-lg-8">
+                            <div class="card border-0 shadow-sm bg-white p-4">
+                                <h5 class="fw-bold text-dark mb-4">
+                                    <i class="fa-solid fa-list text-accent me-2"></i>الأقسام الحالية
+                                </h5>
+                                <div id="categories-list">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-warning" role="status"></div>
+                                        <p class="mt-2 text-muted mb-0">جارٍ تحميل الأقسام...</p>
+                                    </div>
+                                </div>
+                                <p class="text-muted small mt-3 mb-0">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    الأقسام المحذوفة لا تُحذف منتجاتها. تأكد من نقل المنتجات إلى قسم آخر أولاً.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- مودال إضافة / تعديل المنتج -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="admin-header-bg py-3">
+                    <h5 class="modal-title text-white brand-font" id="productModalLabel">إضافة منتج</h5>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="product-form">
+                        <input type="hidden" id="product-id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="product-name-ar" class="form-label small fw-semibold text-muted">الاسم بالعربية</label>
+                                <input type="text" class="form-control" id="product-name-ar" required placeholder="اسبريسو">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="product-name-en" class="form-label small fw-semibold text-muted">الاسم بالإنجليزية</label>
+                                <input type="text" class="form-control" id="product-name-en" required placeholder="Espresso" dir="ltr">
+                            </div>
+                            <div class="col-md-6" id="price-field-wrapper">
+                                <label for="product-price" class="form-label small fw-semibold text-muted">السعر (جنيه سوداني)</label>
+                                <input type="number" class="form-control" id="product-price" placeholder="3000" dir="ltr">
+                            </div>
+                            <!-- Pizza size prices — shown only when pizza category is selected -->
+                            <div class="col-12 d-none" id="pizza-prices-wrapper">
+                                <div class="alert alert-warning py-2 px-3 mb-2 small">
+                                    <i class="fa-solid fa-pizza-slice me-1"></i> أسعار الحجم — خاص بالبيتزا
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label for="product-price-small" class="form-label small fw-semibold text-muted">سعر صغيرة (جنيه)</label>
+                                        <input type="number" class="form-control" id="product-price-small" placeholder="5000" dir="ltr">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="product-price-large" class="form-label small fw-semibold text-muted">سعر كبيرة (جنيه)</label>
+                                        <input type="number" class="form-control" id="product-price-large" placeholder="8000" dir="ltr">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="product-category" class="form-label small fw-semibold text-muted">القسم</label>
+                                <select class="form-select" id="product-category" required>
+                                    <!-- Populated dynamically from Firestore categories -->
+                                    <option value="">-- اختر القسم --</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="product-image-file" class="form-label small fw-semibold text-muted">صورة المنتج (تُضغط إلى WebP أقل من 300KB)</label>
+                                <input type="file" class="form-control" id="product-image-file" accept="image/*">
+                                <input type="hidden" id="product-image-url">
+                                <div class="mt-2 text-center" id="image-preview-container">
+                                    <img id="image-preview" src="" alt="معاينة" class="img-thumbnail d-none" style="max-height: 120px;">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="product-available" checked>
+                                    <label class="form-check-label small fw-semibold text-muted" for="product-available">متاح في القائمة</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="product-bestseller">
+                                    <label class="form-check-label small fw-semibold text-muted" for="product-bestseller">شارة الأكثر مبيعاً</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex justify-content-start gap-2">
+                            <button type="button" class="btn btn-light rounded-0" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-premium px-4 d-flex align-items-center gap-2" id="save-product-btn">
+                                <span>حفظ المنتج</span>
+                                <div class="spinner-border spinner-border-sm d-none" id="save-spinner"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 RTL Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/admin.js?v=4"></script>
+</body>
+</html>
