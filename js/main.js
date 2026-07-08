@@ -149,15 +149,18 @@ async function fetchMenuData() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        appState.products = data || [];
-        
-        // If API returns successfully but with empty array, fallback to mock data
+
+        // Support both { products, categories } format and legacy flat array
+        const products = data.products || (Array.isArray(data) ? data : []);
+        appState.products = products;
+
+        // If API returns empty, fallback to mock data
         if (appState.products.length === 0) {
             console.log("Worker returned empty menu. Using mock items.");
             appState.products = mockProducts;
         }
     } catch (error) {
-        console.warn("Could not fetch menu from Cloudflare Worker API (API may not be deployed yet). Using premium mock menu items as fallback.", error);
+        console.warn("Could not fetch from Worker API. Using mock menu items as fallback.", error);
         appState.products = mockProducts;
     } finally {
         // Build & Render Menu

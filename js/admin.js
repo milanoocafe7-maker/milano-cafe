@@ -731,18 +731,32 @@ if (publishMenuBtn) {
         publishMenuBtn.setAttribute("disabled", "true");
         publishMenuBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> جارٍ النشر...`;
         try {
+            // 1. Fetch all products from Firestore
+            const productSnap = await getDocs(collection(db, "products"));
+            const products = [];
+            productSnap.forEach(d => products.push({ id: d.id, ...d.data() }));
+
+            // 2. Fetch all categories from Firestore
+            const catSnap = await getDocs(collection(db, "categories"));
+            const categories = [];
+            catSnap.forEach(d => categories.push({ id: d.id, ...d.data() }));
+
+            // 3. POST combined payload to /api/menu → saves to KV cache
+            const payload = JSON.stringify({ products, categories });
             const response = await fetch('/api/menu', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: payload
             });
+
             if (response.ok) {
-                alert("تم بنجاح! تم مسح كاش Cloudflare KV وإعادة بنائه. القائمة العامة محدَّثة!");
+                alert(`✅ تم النشر بنجاح! تم حفظ ${products.length} منتج في كاش Cloudflare. القائمة العامة محدَّثة الآن!`);
             } else {
                 const text = await response.text();
-                alert("تم مسح الكاش، لكن Worker أعاد: " + text + ". سيتم إعادة البناء عند أول زيارة.");
+                alert("حدث خطأ أثناء النشر: " + text);
             }
         } catch (err) {
-            alert("تم محاكاة النشر. عند النشر على Cloudflare، سيتم استدعاء Worker API تلقائياً.");
+            alert("فشل النشر: " + err.message);
         } finally {
             publishMenuBtn.removeAttribute("disabled");
             publishMenuBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>نشر القائمة (مسح الكاش)</span>`;
