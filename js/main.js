@@ -143,6 +143,13 @@ window.addEventListener("DOMContentLoaded", () => {
 async function fetchMenuData() {
     const preloader = document.getElementById("preloader");
     try {
+        // Allow admin to force-refresh cache by adding ?refresh=true to the URL
+        if (window.location.search.includes('refresh')) {
+            localStorage.removeItem("milano_cached_menu");
+            localStorage.removeItem("milano_cache_time");
+            console.log("Cache cleared via URL parameter");
+        }
+
         // 1. Check phone's local cache (0 Firebase reads)
         const cachedStr = localStorage.getItem("milano_cached_menu");
         const cacheTime = localStorage.getItem("milano_cache_time");
