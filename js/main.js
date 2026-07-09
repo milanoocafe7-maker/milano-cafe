@@ -194,15 +194,13 @@ async function fetchMenuData() {
         // Force scroll to top so user sees the hero section first
         window.scrollTo(0, 0);
         
-        // Hide preloader with a smooth fade
+        // Hide preloader instantly once data is ready
+        preloader.classList.add("fade-out");
+        // Trigger hero animation after preloader is gone
         setTimeout(() => {
-            preloader.classList.add("fade-out");
-            // Trigger hero animation after preloader is gone
-            setTimeout(() => {
-                const heroContent = document.querySelector('.hero-content');
-                if (heroContent) heroContent.classList.add('animate-hero');
-            }, 300);
-        }, 800);
+            const heroContent = document.querySelector('.hero-content');
+            if (heroContent) heroContent.classList.add('animate-hero');
+        }, 300);
     }
 }
 
