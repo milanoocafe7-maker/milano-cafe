@@ -143,16 +143,34 @@ window.addEventListener("DOMContentLoaded", () => {
 async function fetchMenuData() {
     const preloader = document.getElementById("preloader");
     try {
-        const docRef = doc(db, "published_menu", "live");
-        const docSnap = await getDoc(docRef);
+        // 1. Check phone's local cache (0 Firebase reads)
+        const cachedStr = localStorage.getItem("milano_cached_menu");
+        const cacheTime = localStorage.getItem("milano_cache_time");
+        const TWO_HOURS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        if (cachedStr && cacheTime && (Date.now() - parseInt(cacheTime) < TWO_HOURS)) {
+            console.log("Loading menu from local cache (0 Firebase Reads)");
+            const data = JSON.parse(cachedStr);
             appState.products = data.products || [];
             appState.categories = data.categories || [];
         } else {
-            console.log("No published menu found. Using mock items.");
-            appState.products = mockProducts;
+            // 2. Cache expired or doesn't exist -> Fetch from Firebase (1 Read)
+            console.log("Fetching fresh menu from Firebase (1 Read)");
+            const docRef = doc(db, "published_menu", "live");
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                appState.products = data.products || [];
+                appState.categories = data.categories || [];
+                
+                // Save to phone's local storage for next time
+                localStorage.setItem("milano_cached_menu", JSON.stringify(data));
+                localStorage.setItem("milano_cache_time", Date.now().toString());
+            } else {
+                console.log("No published menu found. Using mock items.");
+                appState.products = mockProducts;
+            }
         }
 
         // If API returns successfully but with empty array, fallback to mock data
