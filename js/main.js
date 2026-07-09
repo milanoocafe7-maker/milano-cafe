@@ -153,7 +153,7 @@ async function fetchMenuData() {
         // 1. Check phone's local cache (0 Firebase reads)
         const cachedStr = localStorage.getItem("milano_cached_menu");
         const cacheTime = localStorage.getItem("milano_cache_time");
-        const TWO_HOURS = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+        const TWO_HOURS = 2 * 60 * 60 * 1000;
 
         if (cachedStr && cacheTime && (Date.now() - parseInt(cacheTime) < TWO_HOURS)) {
             console.log("Loading menu from local cache (0 Firebase Reads)");
@@ -161,7 +161,7 @@ async function fetchMenuData() {
             appState.products = data.products || [];
             appState.categories = data.categories || [];
         } else {
-            // 2. Cache expired or doesn't exist -> Fetch from Firebase (1 Read)
+            // 2. Cache expired or missing -> Fetch from Firebase (1 Read)
             console.log("Fetching fresh menu from Firebase (1 Read)");
             const docRef = doc(db, "published_menu", "live");
             const docSnap = await getDoc(docRef);
@@ -170,33 +170,18 @@ async function fetchMenuData() {
                 const data = docSnap.data();
                 appState.products = data.products || [];
                 appState.categories = data.categories || [];
-                
-                // Save to phone's local storage for next time
                 localStorage.setItem("milano_cached_menu", JSON.stringify(data));
                 localStorage.setItem("milano_cache_time", Date.now().toString());
-            } else {
-                console.log("No published menu found. Using mock items.");
-                appState.products = mockProducts;
             }
-        }
-
-        // If API returns successfully but with empty array, fallback to mock data
-        if (appState.products.length === 0) {
-            console.log("Empty menu. Using mock items.");
-            appState.products = mockProducts;
+            // If document doesn't exist, products stays empty -> no fake menu shown
         }
     } catch (error) {
-        console.warn("Could not fetch from Firebase. Using mock menu items as fallback.", error);
-        appState.products = mockProducts;
+        console.warn("Could not fetch from Firebase:", error);
+        // Don't show fake mock products - leave menu empty so customer knows it's loading
     } finally {
-        // Build & Render Menu
         renderMenu();
-        // Force scroll to top so user sees the hero section first
         window.scrollTo(0, 0);
-        
-        // Hide preloader instantly once data is ready
         preloader.classList.add("fade-out");
-        // Trigger hero animation after preloader is gone
         setTimeout(() => {
             const heroContent = document.querySelector('.hero-content');
             if (heroContent) heroContent.classList.add('animate-hero');
@@ -240,50 +225,60 @@ function renderMenu() {
         noProductsMsg.classList.add("d-none");
     }
 
-    // Group products by category
+    // Group products by category slug/name (whatever is stored in product.category)
     const categoriesMap = {};
     filteredProducts.forEach(p => {
-        const cat = p.category || "other";
-        if (!categoriesMap[cat]) {
-            categoriesMap[cat] = [];
-        }
+        const cat = (p.category || "other").trim();
+        if (!categoriesMap[cat]) categoriesMap[cat] = [];
         categoriesMap[cat].push(p);
     });
 
-    // Generate menu sections and nav links in the correct ordered defined by Admin
-    // First, map the categories defined in the database
+    // Build the ordered list of category keys using appState.categories order (set by admin)
+    // Each category in appState.categories has: id, name_ar, name_en, slug
+    // Products store their category as slug, name_en, or name_ar — check all possibilities
     const orderedCategoryKeys = [];
+    const usedKeys = new Set();
+
     appState.categories.forEach(cat => {
-        const keyOptions = [
-            (cat.slug || '').toLowerCase().trim(),
-            (cat.name_en || '').toLowerCase().trim(),
-            (cat.name_ar || '').trim()
-        ];
-        
-        // Find which key actually exists in our categoriesMap
-        let foundKey = null;
-        for (const k of keyOptions) {
-            if (categoriesMap[k]) {
-                foundKey = k;
-                break;
-            }
+        // All possible values that a product's .category field might hold for this category
+        const possibleKeys = [
+            (cat.slug || '').trim(),
+            (cat.name_en || '').trim().toLowerCase(),
+            (cat.name_ar || '').trim(),
+            (cat.id || '').trim()
+        ].filter(Boolean);
+
+        // Find the actual key used in categoriesMap
+        let matchedKey = null;
+        for (const candidate of possibleKeys) {
+            // Case-insensitive search across all map keys
+            const found = Object.keys(categoriesMap).find(
+                k => k.trim().toLowerCase() === candidate.toLowerCase()
+            );
+            if (found) { matchedKey = found; break; }
         }
-        
-        if (foundKey && !orderedCategoryKeys.includes(foundKey)) {
-            orderedCategoryKeys.push(foundKey);
+
+        if (matchedKey && !usedKeys.has(matchedKey)) {
+            orderedCategoryKeys.push({ key: matchedKey, cat });
+            usedKeys.add(matchedKey);
         }
     });
 
-    // Add any remaining categories that were in the products but not in the defined categories
+    // Any products whose category doesn't match any admin-defined category go at the end
     Object.keys(categoriesMap).forEach(key => {
-        if (!orderedCategoryKeys.includes(key)) {
-            orderedCategoryKeys.push(key);
+        if (!usedKeys.has(key)) {
+            orderedCategoryKeys.push({ key, cat: null });
+            usedKeys.add(key);
         }
     });
 
-    orderedCategoryKeys.forEach((categoryName, index) => {
-        const categoryId = categoryName.replace(/\s+/g, '-').toLowerCase();
-        const displayCategoryName = formatCategoryName(categoryName);
+    orderedCategoryKeys.forEach(({ key, cat }, index) => {
+        const categoryId = key.replace(/\s+/g, '-').toLowerCase();
+        // Use the database name directly if available, otherwise fallback to formatCategoryName
+        const isAr = appState.currentLang === 'ar';
+        const displayCategoryName = cat
+            ? (isAr ? (cat.name_ar || cat.name_en || key) : (cat.name_en || cat.name_ar || key))
+            : formatCategoryName(key);
         
         // 1. Add Navigation Link
         const navLink = document.createElement("a");
@@ -295,8 +290,6 @@ function renderMenu() {
             const targetEl = document.getElementById(categoryId);
             if (targetEl) {
                 targetEl.scrollIntoView({ behavior: 'smooth' });
-                
-                // Highlight clicked category
                 document.querySelectorAll(".nav-link-custom").forEach(l => l.classList.remove("active"));
                 navLink.classList.add("active");
             }
@@ -326,11 +319,10 @@ function renderMenu() {
         const rowDiv = document.createElement("div");
         rowDiv.className = "row g-4 row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5";
 
-        categoriesMap[categoryName].forEach(p => {
+        categoriesMap[key].forEach(p => {
             const cardCol = document.createElement("div");
             cardCol.className = "col";
 
-            const isAr = appState.currentLang === 'ar';
             const currency = isAr ? 'جنيه' : 'SDG';
             const mainName = isAr ? p.name_ar : p.name_en;
             const subName = isAr ? p.name_en : p.name_ar;
@@ -349,17 +341,16 @@ function renderMenu() {
                 priceHtml = `<div class="product-price">${Number(p.price||0).toLocaleString('en-US')} ${currency}</div>`;
             }
             
-            // Premium product image card template
             cardCol.innerHTML = `
                 <div class="product-card">
                     <div class="product-image-container">
                         ${p.bestSeller ? `<span class="badge-bestseller">${translations[appState.currentLang].bestSeller}</span>` : ''}
-                        <img src="${p.image}" alt="${p.name_en}" class="product-image" loading="lazy" 
+                        <img src="${p.image}" alt="${p.name_en || ''}" class="product-image" loading="lazy" 
                              onerror="this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=300&auto=format&fit=crop'">
                     </div>
                     <div class="product-info">
-                        <div class="product-title-en">${mainName}</div>
-                        <div class="product-title-ar small text-muted">${subName}</div>
+                        <div class="product-title-en">${mainName || ''}</div>
+                        <div class="product-title-ar small text-muted">${subName || ''}</div>
                         ${priceHtml}
                     </div>
                 </div>
