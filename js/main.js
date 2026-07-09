@@ -117,29 +117,29 @@ const mockProducts = [
     }
 ];
 
-let appState = {
+const appState = {
     products: [],
-    currentLang: 'ar',
-    searchQuery: ''
+    categories: [],
+    currentLang: "ar",
+    searchQuery: ""
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Current year in footer
-    document.getElementById("current-year").textContent = new Date().getFullYear();
+// ─────────────────────────────────────────
+// Lifecycle & Fetch
+// ─────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+    // Check local storage for language preference
+    const savedLang = localStorage.getItem("milano_lang");
+    if (savedLang) {
+        appState.currentLang = savedLang;
+        document.documentElement.setAttribute("lang", savedLang);
+        document.documentElement.setAttribute("dir", savedLang === 'ar' ? 'rtl' : 'ltr');
+    }
     
-    // Set Arabic as default language on page load
-    const htmlEl = document.documentElement;
-    htmlEl.setAttribute("lang", "ar");
-    htmlEl.setAttribute("dir", "rtl");
-    
-    // Initialize UI language
     updateUILanguage();
-    
-    // Fetch Products
     fetchMenuData();
 });
 
-// Fetch menu data from Cloudflare Worker
 async function fetchMenuData() {
     const preloader = document.getElementById("preloader");
     try {
@@ -149,6 +149,7 @@ async function fetchMenuData() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             appState.products = data.products || [];
+            appState.categories = data.categories || [];
         } else {
             console.log("No published menu found. Using mock items.");
             appState.products = mockProducts;
@@ -320,9 +321,20 @@ function renderMenu() {
     setupScrollHighlight();
 }
 
-// Convert category key to suitable translation / capitalization
+// Convert category key to suitable translation / capitalization from database
 function formatCategoryName(category) {
     const isAr = appState.currentLang === 'ar';
+    const key = category.toLowerCase().trim();
+
+    // 1. Look for a matching category from the database (published_menu)
+    const dbCat = appState.categories.find(c => c.slug === key || c.name_en.toLowerCase() === key || c.name_ar === key);
+    
+    if (dbCat) {
+        // Return the dynamic database name
+        return isAr ? dbCat.name_ar : dbCat.name_en;
+    }
+
+    // 2. Fallback dictionary if db empty or mock products
     const dict = {
         "coffee": isAr ? "قهوة" : "Coffee",
         "hot drinks": isAr ? "مشروبات ساخنة" : "Hot Drinks",
@@ -332,7 +344,6 @@ function formatCategoryName(category) {
         "food": isAr ? "مأكولات" : "Food"
     };
     
-    const key = category.toLowerCase().trim();
     if (dict[key]) {
         return dict[key];
     }
