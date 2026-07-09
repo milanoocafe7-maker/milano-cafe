@@ -56,7 +56,7 @@ if (productModalEl) {
 }
 
 // ─────────────────────────────────────────
-// 🔐 Auth State
+// Auth State
 // ─────────────────────────────────────────
 onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -95,7 +95,7 @@ if (logoutBtn) {
 }
 
 // ─────────────────────────────────────────
-// 📂 CATEGORIES — Load from Firestore
+// CATEGORIES — Load from Firestore
 // ─────────────────────────────────────────
 async function loadCategories() {
     try {
@@ -272,7 +272,7 @@ if (categoryForm) {
     });
 }
 
-// 🔄 Reorder category up/down
+// Reorder category up/down
 window.moveCategoryUp = async function(index) {
     if (index <= 0) return;
     await swapCategoryOrder(index, index - 1);
@@ -311,7 +311,7 @@ async function swapCategoryOrder(idx1, idx2) {
     }
 }
 
-// ✏ Load category into form for editing
+// Load category into form for editing
 window.editCategory = function(id) {
     const cat = allCategories.find(c => c.id === id);
     if (!cat) return;
@@ -334,7 +334,7 @@ window.resetCategoryForm = function() {
     document.getElementById("cancel-edit-cat-btn").style.display = "none";
 };
 
-// ❌ Delete category from Firestore
+// Delete category from Firestore
 window.deleteCategory = async function(id, name) {
     const productCount = allProducts.filter(p => p.category === allCategories.find(c => c.id === id)?.slug).length;
     let msg = `هل أنت متأكد من حذف قسم "${name}"؟`;
@@ -351,7 +351,7 @@ window.deleteCategory = async function(id, name) {
 };
 
 // ─────────────────────────────────────────
-// 🛍 PRODUCTS — Load from Firestore
+// PRODUCTS — Load from Firestore
 // ─────────────────────────────────────────
 async function loadProductsFromFirestore() {
     productsTableBody.innerHTML = `
@@ -582,7 +582,7 @@ window.openEditProductModal = function(id) {
 };
 
 // ─────────────────────────────────────────
-// 📸 WebP Compression (client-side, saves to Firestore as Base64)
+// WebP Compression (client-side, saves to Firestore as Base64)
 // ─────────────────────────────────────────
 function compressAndConvertToWebP(file) {
     return new Promise((resolve, reject) => {
@@ -625,7 +625,7 @@ if (productImageFile) {
 }
 
 // ─────────────────────────────────────────
-// 💾 Save Product (Add / Edit)
+// Save Product (Add / Edit)
 // ─────────────────────────────────────────
 if (productForm) {
     productForm.addEventListener("submit", async (e) => {
@@ -725,7 +725,7 @@ window.deleteProduct = async function(id) {
 };
 
 // ─────────────────────────────────────────
-// ⚡ Publish Menu — Clear Cloudflare KV Cache
+// Publish Menu — Clear Cloudflare KV Cache
 // ─────────────────────────────────────────
 if (publishMenuBtn) {
     publishMenuBtn.addEventListener("click", async () => {
