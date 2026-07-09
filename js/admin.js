@@ -14,7 +14,8 @@ import {
     getDocs, 
     query, 
     orderBy, 
-    serverTimestamp 
+    serverTimestamp,
+    setDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ─────────────────────────────────────────
@@ -741,25 +742,18 @@ if (publishMenuBtn) {
             const categories = [];
             catSnap.forEach(d => categories.push({ id: d.id, ...d.data() }));
 
-            // 3. POST combined payload to /api/menu → saves to KV cache
-            const payload = JSON.stringify({ products, categories });
-            const response = await fetch('/api/menu', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: payload
-            });
+            // 3. Save combined payload to a Single Document in Firestore
+            const payload = { products, categories, updatedAt: serverTimestamp() };
+            
+            await setDoc(doc(db, "published_menu", "live"), payload);
 
-            if (response.ok) {
-                alert(`✅ تم النشر بنجاح! تم حفظ ${products.length} منتج في كاش Cloudflare. القائمة العامة محدَّثة الآن!`);
-            } else {
-                const text = await response.text();
-                alert("حدث خطأ أثناء النشر: " + text);
-            }
+            alert(`✅ تم النشر بنجاح! تم حفظ ${products.length} منتج في قاعدة البيانات. القائمة العامة محدَّثة الآن!`);
+            
         } catch (err) {
             alert("فشل النشر: " + err.message);
         } finally {
             publishMenuBtn.removeAttribute("disabled");
-            publishMenuBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>نشر القائمة (مسح الكاش)</span>`;
+            publishMenuBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>نشر القائمة (تحديث الموقع)</span>`;
         }
     });
 }

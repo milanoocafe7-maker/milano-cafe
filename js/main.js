@@ -1,7 +1,6 @@
 // MILANO CAFE - Public Menu Handler
-
-// Config - Replace with your Cloudflare Worker URL when deployed if running across domains
-const WORKER_API_ENDPOINT = '/api/menu';
+import { db } from "./firebase.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Translation Dictionaries
 const translations = {
@@ -144,23 +143,24 @@ document.addEventListener("DOMContentLoaded", () => {
 async function fetchMenuData() {
     const preloader = document.getElementById("preloader");
     try {
-        const response = await fetch(WORKER_API_ENDPOINT);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const docRef = doc(db, "published_menu", "live");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            appState.products = data.products || [];
+        } else {
+            console.log("No published menu found. Using mock items.");
+            appState.products = mockProducts;
         }
-        const data = await response.json();
 
-        // Support both { products, categories } format and legacy flat array
-        const products = data.products || (Array.isArray(data) ? data : []);
-        appState.products = products;
-
-        // If API returns empty, fallback to mock data
+        // If API returns successfully but with empty array, fallback to mock data
         if (appState.products.length === 0) {
-            console.log("Worker returned empty menu. Using mock items.");
+            console.log("Empty menu. Using mock items.");
             appState.products = mockProducts;
         }
     } catch (error) {
-        console.warn("Could not fetch from Worker API. Using mock menu items as fallback.", error);
+        console.warn("Could not fetch from Firebase. Using mock menu items as fallback.", error);
         appState.products = mockProducts;
     } finally {
         // Build & Render Menu
