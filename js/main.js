@@ -252,8 +252,38 @@ function renderMenu() {
         categoriesMap[cat].push(p);
     });
 
-    // Generate menu sections and nav links
-    Object.keys(categoriesMap).forEach((categoryName, index) => {
+    // Generate menu sections and nav links in the correct ordered defined by Admin
+    // First, map the categories defined in the database
+    const orderedCategoryKeys = [];
+    appState.categories.forEach(cat => {
+        const keyOptions = [
+            (cat.slug || '').toLowerCase().trim(),
+            (cat.name_en || '').toLowerCase().trim(),
+            (cat.name_ar || '').trim()
+        ];
+        
+        // Find which key actually exists in our categoriesMap
+        let foundKey = null;
+        for (const k of keyOptions) {
+            if (categoriesMap[k]) {
+                foundKey = k;
+                break;
+            }
+        }
+        
+        if (foundKey && !orderedCategoryKeys.includes(foundKey)) {
+            orderedCategoryKeys.push(foundKey);
+        }
+    });
+
+    // Add any remaining categories that were in the products but not in the defined categories
+    Object.keys(categoriesMap).forEach(key => {
+        if (!orderedCategoryKeys.includes(key)) {
+            orderedCategoryKeys.push(key);
+        }
+    });
+
+    orderedCategoryKeys.forEach((categoryName, index) => {
         const categoryId = categoryName.replace(/\s+/g, '-').toLowerCase();
         const displayCategoryName = formatCategoryName(categoryName);
         

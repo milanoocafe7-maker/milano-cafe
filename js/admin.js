@@ -737,10 +737,16 @@ if (publishMenuBtn) {
             const products = [];
             productSnap.forEach(d => products.push({ id: d.id, ...d.data() }));
 
-            // 2. Fetch all categories from Firestore
+            // 2. Fetch all categories from Firestore and sort them by order
             const catSnap = await getDocs(collection(db, "categories"));
             const categories = [];
             catSnap.forEach(d => categories.push({ id: d.id, ...d.data() }));
+            
+            categories.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : 9999;
+                const orderB = typeof b.order === 'number' ? b.order : 9999;
+                return orderA - orderB;
+            });
 
             // 3. Save combined payload to a Single Document in Firestore
             const payload = { products, categories, updatedAt: serverTimestamp() };
