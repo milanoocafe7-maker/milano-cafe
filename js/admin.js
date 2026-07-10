@@ -675,8 +675,9 @@ if (productForm) {
             const file = productImageFile.files[0];
             if (file) {
                 const saveBtn = document.getElementById("save-product-btn");
-                const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = "جارٍ رفع الصورة...";
+                const textNode = Array.from(saveBtn.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== "");
+                const originalText = textNode ? textNode.textContent : "حفظ المنتج";
+                if (textNode) textNode.textContent = " جارٍ رفع الصورة... ";
                 
                 try {
                     const webpBlob = await compressAndConvertToWebP(file);
@@ -684,7 +685,7 @@ if (productForm) {
                 } catch (err) {
                     throw new Error("فشل رفع الصورة: " + err.message);
                 } finally {
-                    saveBtn.innerHTML = originalText;
+                    if (textNode) textNode.textContent = originalText;
                 }
             }
 
