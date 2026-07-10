@@ -582,8 +582,30 @@ window.openEditProductModal = function(id) {
 };
 
 // ─────────────────────────────────────────
-// WebP Compression (client-side, saves to Firestore as Base64)
+// WebP Compression & Cloudinary Upload
 // ─────────────────────────────────────────
+const CLOUDINARY_CLOUD_NAME = "xxfyrvy0";
+const CLOUDINARY_UPLOAD_PRESET = "milano_products";
+
+async function uploadToCloudinary(blob) {
+    const formData = new FormData();
+    formData.append("file", blob, "image.webp");
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || "Cloudinary upload failed");
+    }
+
+    const data = await response.json();
+    return data.secure_url;
+}
+
 function compressAndConvertToWebP(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -652,13 +674,18 @@ if (productForm) {
         try {
             const file = productImageFile.files[0];
             if (file) {
-                const webpBlob = await compressAndConvertToWebP(file);
-                imageUrl = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(webpBlob);
-                });
+                const saveBtn = document.getElementById("save-product-btn");
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = "جارٍ رفع الصورة...";
+                
+                try {
+                    const webpBlob = await compressAndConvertToWebP(file);
+                    imageUrl = await uploadToCloudinary(webpBlob);
+                } catch (err) {
+                    throw new Error("فشل رفع الصورة: " + err.message);
+                } finally {
+                    saveBtn.innerHTML = originalText;
+                }
             }
 
             const productData = {
