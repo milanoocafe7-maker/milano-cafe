@@ -14,7 +14,7 @@ const translations = {
         footerTagline: "An elegant premium QR digital menu experience in Sudan.",
         footerContact: "Contact Us",
         footerFollow: "Follow Us",
-        address: "Khartoum - Sudan",
+        address: "Omdurman - Nile St - North of Al Abraj Stop",
         langToggle: "العربية"
     },
     ar: {
@@ -27,7 +27,7 @@ const translations = {
         footerTagline: "تجربة قائمة رقمية فاخرة عبر رمز QR في السودان.",
         footerContact: "اتصل بنا",
         footerFollow: "تابعنا",
-        address: "الخرطوم - السودان",
+        address: "امدرمان - شارع النيل - شمال استوب الابراج",
         langToggle: "English"
     }
 };
