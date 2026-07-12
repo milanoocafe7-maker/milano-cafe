@@ -6,7 +6,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-
 const translations = {
     en: {
         title: "Milano Cafe | Premium Digital Menu",
-        subtitle: "Premium Coffee Experience",
+        subtitle: "Where tranquility meets mood",
         explore: "Explore Menu",
         searchPlaceholder: "Search menu...",
         noItems: "No items found matching your search.",
@@ -19,7 +19,7 @@ const translations = {
     },
     ar: {
         title: "ميلانو كافيه | قائمة الطعام الرقمية",
-        subtitle: "تجربة قهوة بطعم مميز",
+        subtitle: "حيث يجتمع الهدوء والمزاج",
         explore: "تصفح المنيو",
         searchPlaceholder: "ابحث في القائمة...",
         noItems: "لم يتم العثور على عناصر تطابق بحثك.",
@@ -138,7 +138,24 @@ window.addEventListener("DOMContentLoaded", () => {
     
     updateUILanguage();
     fetchMenuData();
+    setupCategoryArrows();
 });
+
+function setupCategoryArrows() {
+    const btnLeft = document.getElementById('nav-arrow-left');
+    const btnRight = document.getElementById('nav-arrow-right');
+    const navContainer = document.getElementById('category-nav-links');
+
+    if (btnLeft && btnRight && navContainer) {
+        btnLeft.addEventListener('click', () => {
+            navContainer.scrollBy({ left: -200, behavior: 'smooth' });
+        });
+        
+        btnRight.addEventListener('click', () => {
+            navContainer.scrollBy({ left: 200, behavior: 'smooth' });
+        });
+    }
+}
 
 async function fetchMenuData() {
     const preloader = document.getElementById("preloader");

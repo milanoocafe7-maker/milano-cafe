@@ -47,17 +47,21 @@
         <div class="hero-content">
             <img src="logo.jpeg" alt="ميلانو كافيه" class="hero-logo" onerror="this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=300&auto=format&fit=crop'">
             <h2 class="hero-title brand-font">Milano Cafe</h2>
-            <p class="hero-subtitle" id="hero-subtitle-text">تجربة قهوة بطعم مميز</p>
+            <p class="hero-subtitle" id="hero-subtitle-text">حيث يجتمع الهدوء والمزاج</p>
             <a href="#menu-anchor" class="btn btn-premium" id="btn-explore-text">تصفح المنيو</a>
         </div>
     </header>
 
     <!-- STICKY NAVIGATION -->
     <nav class="sticky-navbar" id="menu-anchor">
-        <div class="container">
-            <div class="nav-container" id="category-nav-links">
-                <!-- Dynamically generated -->
+        <div class="container position-relative">
+            <button class="nav-arrow nav-arrow-left" id="nav-arrow-left" aria-label="Scroll left"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="nav-container-wrapper" id="nav-container-wrapper">
+                <div class="nav-container" id="category-nav-links">
+                    <!-- Dynamically generated -->
+                </div>
             </div>
+            <button class="nav-arrow nav-arrow-right" id="nav-arrow-right" aria-label="Scroll right"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
     </nav>
 

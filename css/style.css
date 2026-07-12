@@ -281,6 +281,52 @@ h1, h2, h3, h4, h5, h6, .brand-font {
     border-color: var(--color-burgundy);
 }
 
+/* Category Navigation Arrows */
+.nav-container-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--color-bg-cream);
+    border: 1px solid var(--color-accent);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-accent);
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.nav-arrow:hover {
+    background: var(--color-accent);
+    color: var(--color-bg-cream);
+}
+.nav-arrow-right {
+    right: 0;
+}
+.nav-arrow-left {
+    left: 0;
+}
+@media (max-width: 768px) {
+    .nav-arrow {
+        display: none;
+    }
+}
+/* For desktop, ensure smooth scrolling */
+@media (min-width: 769px) {
+    .nav-container {
+        scroll-behavior: smooth;
+        margin: 0 25px; /* Leave space for arrows */
+    }
+}
+
 /* Language and Search Bar */
 .search-lang-bar {
     background-color: var(--color-bg-white);
