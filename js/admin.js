@@ -781,6 +781,10 @@ if (publishMenuBtn) {
             
             await setDoc(doc(db, "published_menu", "live"), payload);
 
+            // Clear local cache for the admin so they can see changes immediately
+            localStorage.removeItem("milano_cached_menu");
+            localStorage.removeItem("milano_cache_time");
+
             alert(`✅ تم النشر بنجاح! تم حفظ ${products.length} منتج في قاعدة البيانات. القائمة العامة محدَّثة الآن!`);
             
         } catch (err) {

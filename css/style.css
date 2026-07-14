@@ -556,6 +556,7 @@ h1, h2, h3, h4, h5, h6, .brand-font {
     margin-right: 0.5rem;
     border-radius: 50%;
     transition: var(--transition-smooth);
+    text-decoration: none;
 }
 
 .footer-social-icon:hover {
