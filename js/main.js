@@ -196,6 +196,15 @@ async function fetchMenuData() {
         console.warn("Could not fetch from Firebase:", error);
         // Don't show fake mock products - leave menu empty so customer knows it's loading
     } finally {
+        // Sort categories just to guarantee order
+        if (appState.categories && appState.categories.length > 0) {
+            appState.categories.sort((a, b) => {
+                const orderA = typeof a.order === 'number' ? a.order : 9999;
+                const orderB = typeof b.order === 'number' ? b.order : 9999;
+                return orderA - orderB;
+            });
+        }
+        
         renderMenu();
         window.scrollTo(0, 0);
         preloader.classList.add("fade-out");
