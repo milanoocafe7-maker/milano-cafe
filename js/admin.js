@@ -3,7 +3,10 @@ import { auth, db } from "./firebase.js";
 import { 
     signInWithEmailAndPassword, 
     signOut, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     collection, 
@@ -12,6 +15,7 @@ import {
     updateDoc, 
     deleteDoc, 
     getDocs, 
+    getDoc,
     query, 
     orderBy, 
     serverTimestamp,
@@ -50,6 +54,7 @@ let allProducts = [];
 let allCategories = []; // { id, name_ar, name_en, slug }
 let filteredProducts = [];
 let currentFilterCategory = "all";
+let cafeSettings = {};
 
 if (productModalEl) {
     productModal = new bootstrap.Modal(productModalEl);
@@ -63,14 +68,35 @@ onAuthStateChanged(auth, (user) => {
         loginContainer.classList.add("d-none");
         dashboardContainer.classList.remove("d-none");
         adminUserEmail.textContent = user.email;
-        loadCategories().then(() => loadProductsFromFirestore());
+        loadSettings().then(() => loadCategories()).then(() => loadProductsFromFirestore());
     } else {
         loginContainer.classList.remove("d-none");
         dashboardContainer.classList.add("d-none");
         allProducts = [];
         allCategories = [];
+        cafeSettings = {};
     }
 });
+
+function updateDashboardStats() {
+    const totalProdEl = document.getElementById("stat-total-products");
+    const totalCatEl = document.getElementById("stat-total-categories");
+    const availEl = document.getElementById("stat-available-products");
+    const unavailEl = document.getElementById("stat-unavailable-products");
+
+    if (totalProdEl) totalProdEl.textContent = allProducts.length;
+    if (totalCatEl) totalCatEl.textContent = allCategories.length;
+    
+    let availCount = 0;
+    let unavailCount = 0;
+    allProducts.forEach(p => {
+        if (p.available) availCount++;
+        else unavailCount++;
+    });
+
+    if (availEl) availEl.textContent = availCount;
+    if (unavailEl) unavailEl.textContent = unavailCount;
+}
 
 // Login
 if (loginForm) {
@@ -124,6 +150,7 @@ async function loadCategories() {
     renderCategoriesList();
     populateCategorySelect();
     updateCategoryFiltersList();
+    updateDashboardStats();
 }
 
 // Render the categories pills in the Categories tab
@@ -371,15 +398,14 @@ async function loadProductsFromFirestore() {
                 <tr><td colspan="6" class="text-center py-5">
                     <i class="fa-solid fa-folder-open fa-3x mb-3 text-muted"></i>
                     <p class="fs-5 text-muted">قاعدة بيانات القائمة فارغة.</p>
-                    <button class="btn btn-premium mt-2" id="seed-database-btn">إضافة منتجات تجريبية</button>
                 </td></tr>`;
-            document.getElementById("seed-database-btn")?.addEventListener("click", seedFirestore);
             updateCategoryFiltersList();
             return;
         }
         filterAndRenderTable();
         updateCategoryFiltersList();
         renderCategoriesList(); // refresh product counts in categories tab
+        updateDashboardStats();
     } catch (err) {
         console.error(err);
         productsTableBody.innerHTML = `
@@ -387,48 +413,6 @@ async function loadProductsFromFirestore() {
                 <i class="fa-solid fa-triangle-exclamation fa-2x mb-2"></i>
                 <p class="mb-0">فشل تحميل البيانات. تحقق من قواعد الأمان وبيانات الاعتماد.</p>
             </td></tr>`;
-    }
-}
-
-// Seed mock products into Firestore for first-time demo
-async function seedFirestore() {
-    const mockProducts = [
-        { name_en: "Espresso", name_ar: "اسبريسو", category: "coffee", price: 2500, image: "https://images.unsplash.com/photo-151097252790b-af4f42df8e40?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: true, createdAt: serverTimestamp() },
-        { name_en: "Spanish Latte", name_ar: "سبانش لاتيه", category: "coffee", price: 3800, image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: true, createdAt: serverTimestamp() },
-        { name_en: "Cappuccino", name_ar: "كابتشينو", category: "coffee", price: 3200, image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: false, createdAt: serverTimestamp() },
-        { name_en: "Turkish Coffee", name_ar: "قهوة تركية", category: "hot-drinks", price: 2000, image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: false, createdAt: serverTimestamp() },
-        { name_en: "Iced Caramel Macchiato", name_ar: "كراميل ماكياتو بارد", category: "cold-drinks", price: 4200, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: true, createdAt: serverTimestamp() },
-        { name_en: "San Sebastian Cheesecake", name_ar: "سان سيباستيان تشيز كيك", category: "desserts", price: 5500, image: "https://images.unsplash.com/photo-1524351199679-46cddf530c04?q=80&w=600&auto=format&fit=crop", available: true, bestSeller: true, createdAt: serverTimestamp() }
-    ];
-
-    // Also seed default categories if empty
-    const mockCategories = [
-        { name_ar: "قهوة", name_en: "Coffee", slug: "coffee", createdAt: serverTimestamp() },
-        { name_ar: "مشروبات ساخنة", name_en: "Hot Drinks", slug: "hot-drinks", createdAt: serverTimestamp() },
-        { name_ar: "مشروبات باردة", name_en: "Cold Drinks", slug: "cold-drinks", createdAt: serverTimestamp() },
-        { name_ar: "مشروبات طازجة", name_en: "Fresh Drinks", slug: "fresh-drinks", createdAt: serverTimestamp() },
-        { name_ar: "حلويات", name_en: "Desserts", slug: "desserts", createdAt: serverTimestamp() },
-        { name_ar: "مأكولات", name_en: "Food", slug: "food", createdAt: serverTimestamp() }
-    ];
-
-    if (!confirm("هل أنت متأكد من إضافة المنتجات والأقسام التجريبية؟")) return;
-
-    try {
-        productsTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-warning"></div> جارٍ الإضافة...</td></tr>`;
-        if (allCategories.length === 0) {
-            for (const cat of mockCategories) {
-                await addDoc(collection(db, "categories"), cat);
-            }
-        }
-        for (const item of mockProducts) {
-            await addDoc(collection(db, "products"), item);
-        }
-        alert("تمت إضافة المنتجات والأقسام بنجاح! اضغط 'نشر القائمة' لتحديث الكاش والنشر.");
-        await loadCategories();
-        await loadProductsFromFirestore();
-    } catch (err) {
-        alert("فشلت العملية: " + err.message);
-        loadProductsFromFirestore();
     }
 }
 
@@ -777,7 +761,13 @@ if (publishMenuBtn) {
             });
 
             // 3. Save combined payload to a Single Document in Firestore
-            const payload = { products, categories, updatedAt: serverTimestamp() };
+            const payload = { 
+                products, 
+                categories, 
+                settings: cafeSettings,
+                updatedAt: serverTimestamp(),
+                version: "2.0"
+            };
             
             await setDoc(doc(db, "published_menu", "live"), payload);
 
@@ -807,4 +797,241 @@ function getReadableAuthError(code) {
         case "auth/invalid-credential": return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
         default: return code;
     }
+}
+
+// ─────────────────────────────────────────
+// Settings - Cafe Info
+// ─────────────────────────────────────────
+async function loadSettings() {
+    try {
+        const snap = await getDoc(doc(db, "settings", "cafe"));
+        if (snap.exists()) {
+            cafeSettings = snap.data();
+        }
+    } catch (err) {
+        console.error("Could not load settings:", err);
+    }
+}
+
+// ─────────────────────────────────────────
+// Settings - Change Password
+// ─────────────────────────────────────────
+const changePasswordForm = document.getElementById("change-password-form");
+const passwordAlert = document.getElementById("password-alert");
+
+if (changePasswordForm) {
+    changePasswordForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const currentPassword = document.getElementById("current-password").value;
+        const newPassword = document.getElementById("new-password").value;
+        const confirmPassword = document.getElementById("confirm-password").value;
+        const saveBtn = document.getElementById("save-password-btn");
+        const spinner = document.getElementById("password-spinner");
+
+        if (!currentPassword || !newPassword || !confirmPassword) return;
+
+        if (newPassword.length < 8) {
+            showPasswordAlert("يجب أن تكون كلمة المرور الجديدة مكونة من 8 أحرف على الأقل.", "danger");
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showPasswordAlert("كلمتا المرور غير متطابقتين.", "danger");
+            return;
+        }
+
+        const user = auth.currentUser;
+        if (!user) return;
+
+        saveBtn.setAttribute("disabled", "true");
+        spinner.classList.remove("d-none");
+        passwordAlert.classList.add("d-none");
+
+        try {
+            const credential = EmailAuthProvider.credential(user.email, currentPassword);
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPassword);
+
+            showPasswordAlert("تم تغيير كلمة المرور بنجاح.", "success");
+            changePasswordForm.reset();
+        } catch (err) {
+            console.error("Password change error:", err);
+            let msg = "حدث خطأ أثناء تغيير كلمة المرور.";
+            if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+                msg = "كلمة المرور الحالية غير صحيحة.";
+            } else if (err.code === "auth/network-request-failed") {
+                msg = "تعذر الاتصال، حاول مرة أخرى.";
+            }
+            showPasswordAlert(msg, "danger");
+        } finally {
+            saveBtn.removeAttribute("disabled");
+            spinner.classList.add("d-none");
+        }
+    });
+}
+
+function showPasswordAlert(msg, type) {
+    passwordAlert.className = `alert alert-${type} small`;
+    passwordAlert.textContent = msg;
+    passwordAlert.classList.remove("d-none");
+}
+
+// ─────────────────────────────────────────
+// Backup & Restore
+// ─────────────────────────────────────────
+const exportJsonBtn = document.getElementById("export-json-btn");
+const exportXlsxBtn = document.getElementById("export-xlsx-btn");
+const importBtn = document.getElementById("import-btn");
+const importFile = document.getElementById("import-file");
+
+if (exportJsonBtn) {
+    exportJsonBtn.addEventListener("click", () => {
+        const date = new Date().toISOString().split('T')[0];
+        const data = {
+            metadata: { exportDate: date, version: "2.0", format: "json" },
+            settings: cafeSettings,
+            categories: allCategories,
+            products: allProducts
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `milano-backup-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+}
+
+if (exportXlsxBtn) {
+    exportXlsxBtn.addEventListener("click", () => {
+        if (typeof XLSX === "undefined") {
+            alert("مكتبة Excel غير محملة.");
+            return;
+        }
+        const date = new Date().toISOString().split('T')[0];
+        const wb = XLSX.utils.book_new();
+        
+        // Products
+        const prodData = allProducts.map(p => {
+            const row = { ...p };
+            delete row.createdAt;
+            return row;
+        });
+        const wsProd = XLSX.utils.json_to_sheet(prodData);
+        XLSX.utils.book_append_sheet(wb, wsProd, "Products");
+
+        // Categories
+        const catData = allCategories.map(c => {
+            const row = { ...c };
+            delete row.createdAt;
+            return row;
+        });
+        const wsCat = XLSX.utils.json_to_sheet(catData);
+        XLSX.utils.book_append_sheet(wb, wsCat, "Categories");
+
+        // Settings (flatten phones array to string)
+        const settingsRow = { ...cafeSettings, phones: (cafeSettings.phones || []).join(",") };
+        const wsSet = XLSX.utils.json_to_sheet([settingsRow]);
+        XLSX.utils.book_append_sheet(wb, wsSet, "Settings");
+
+        XLSX.writeFile(wb, `milano-backup-${date}.xlsx`);
+    });
+}
+
+if (importBtn) {
+    importBtn.addEventListener("click", async () => {
+        const file = importFile?.files[0];
+        if (!file) {
+            alert("الرجاء اختيار ملف أولاً.");
+            return;
+        }
+        if (!confirm("هل أنت متأكد؟ سيتم استبدال جميع المنتجات والأقسام والإعدادات الحالية بهذه النسخة.")) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                let data;
+                if (file.name.endsWith(".json")) {
+                    data = JSON.parse(e.target.result);
+                } else if (file.name.endsWith(".xlsx")) {
+                    const dataUint8 = new Uint8Array(e.target.result);
+                    const wb = XLSX.read(dataUint8, { type: 'array' });
+                    
+                    const prodSheet = wb.Sheets["Products"];
+                    const catSheet = wb.Sheets["Categories"];
+                    const setSheet = wb.Sheets["Settings"];
+                    
+                    if (!prodSheet || !catSheet || !setSheet) throw new Error("ملف Excel غير صالح. يجب أن يحتوي على أوراق Products, Categories, Settings");
+                    
+                    const products = XLSX.utils.sheet_to_json(prodSheet);
+                    const categories = XLSX.utils.sheet_to_json(catSheet);
+                    const settingsArr = XLSX.utils.sheet_to_json(setSheet);
+                    
+                    const settingsObj = settingsArr[0] || {};
+                    if (settingsObj.phones && typeof settingsObj.phones === 'string') {
+                        settingsObj.phones = settingsObj.phones.split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                    
+                    data = { products, categories, settings: settingsObj };
+                } else {
+                    throw new Error("نوع الملف غير مدعوم.");
+                }
+
+                if (!data.products || !data.categories || !data.settings) {
+                    throw new Error("هيكل الملف غير صالح.");
+                }
+
+                importBtn.setAttribute("disabled", "true");
+                importBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ الاستعادة...';
+
+                // Restore Settings
+                await setDoc(doc(db, "settings", "cafe"), data.settings);
+                cafeSettings = data.settings;
+
+                // Restore Categories
+                const existingCats = await getDocs(collection(db, "categories"));
+                for (const d of existingCats.docs) {
+                    await deleteDoc(doc(db, "categories", d.id));
+                }
+                for (const cat of data.categories) {
+                    const id = cat.id;
+                    const catData = { ...cat, createdAt: serverTimestamp() };
+                    delete catData.id;
+                    if (id) await setDoc(doc(db, "categories", id), catData);
+                    else await addDoc(collection(db, "categories"), catData);
+                }
+
+                // Restore Products
+                const existingProds = await getDocs(collection(db, "products"));
+                for (const d of existingProds.docs) {
+                    await deleteDoc(doc(db, "products", d.id));
+                }
+                for (const prod of data.products) {
+                    const id = prod.id;
+                    const prodData = { ...prod, createdAt: serverTimestamp() };
+                    delete prodData.id;
+                    if (id) await setDoc(doc(db, "products", id), prodData);
+                    else await addDoc(collection(db, "products"), prodData);
+                }
+
+                alert("✅ تم استعادة النسخة الاحتياطية بنجاح! سيتم إعادة تحميل الصفحة.");
+                window.location.reload();
+
+            } catch (err) {
+                console.error(err);
+                alert("خطأ في الاستيراد: " + err.message);
+                importBtn.removeAttribute("disabled");
+                importBtn.innerHTML = '<i class="fa-solid fa-upload"></i> استيراد (يستبدل الحالية)';
+            }
+        };
+
+        if (file.name.endsWith(".xlsx")) {
+            reader.readAsArrayBuffer(file);
+        } else {
+            reader.readAsText(file);
+        }
+    });
 }

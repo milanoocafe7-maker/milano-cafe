@@ -12,6 +12,9 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     
+    <!-- SheetJS for Excel Backup -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
         body { background-color: #f4efeb; font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .admin-nav { background-color: var(--color-primary); }
@@ -86,6 +89,34 @@
         <!-- المحتوى الرئيسي -->
         <main class="container my-5">
 
+            <!-- DASHBOARD STATISTICS -->
+            <div class="row g-3 mb-4" id="dashboard-stats">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 shadow-sm bg-white p-3 text-center stat-card h-100">
+                        <h6 class="text-muted fw-bold mb-1">عدد المنتجات</h6>
+                        <h3 class="fw-bold mb-0" id="stat-total-products">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 shadow-sm bg-white p-3 text-center stat-card h-100">
+                        <h6 class="text-muted fw-bold mb-1">عدد الأقسام</h6>
+                        <h3 class="fw-bold mb-0" id="stat-total-categories">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 shadow-sm bg-white p-3 text-center stat-card h-100">
+                        <h6 class="text-muted fw-bold mb-1">المنتجات المتوفرة</h6>
+                        <h3 class="fw-bold mb-0" id="stat-available-products">0</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card border-0 shadow-sm bg-white p-3 text-center stat-card h-100">
+                        <h6 class="text-muted fw-bold mb-1">غير المتوفرة</h6>
+                        <h3 class="fw-bold mb-0" id="stat-unavailable-products">0</h3>
+                    </div>
+                </div>
+            </div>
+
             <!-- بانر النشر -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -112,6 +143,11 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories-panel" type="button" role="tab">
                         <i class="fa-solid fa-tags me-1"></i> الأقسام
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-panel" type="button" role="tab">
+                        <i class="fa-solid fa-gear me-1"></i> الإعدادات
                     </button>
                 </li>
             </ul>
@@ -221,6 +257,62 @@
                                     <i class="fa-solid fa-circle-info me-1"></i>
                                     الأقسام المحذوفة لا تُحذف منتجاتها. تأكد من نقل المنتجات إلى قسم آخر أولاً.
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== تبويب الإعدادات ===== -->
+                <div class="tab-pane fade" id="settings-panel" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- Change Password Column -->
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm bg-white p-4 h-100">
+                                <h5 class="fw-bold text-dark mb-4 border-bottom pb-3">
+                                    <i class="fa-solid fa-lock text-accent me-2"></i>تغيير كلمة المرور
+                                </h5>
+                                <div id="password-alert" class="alert d-none small"></div>
+                                <form id="change-password-form">
+                                    <div class="mb-3">
+                                        <label for="current-password" class="form-label small fw-semibold text-muted">كلمة المرور الحالية</label>
+                                        <input type="password" class="form-control bg-light border-0" id="current-password" required dir="ltr">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new-password" class="form-label small fw-semibold text-muted">كلمة المرور الجديدة</label>
+                                        <input type="password" class="form-control bg-light border-0" id="new-password" required minlength="8" dir="ltr">
+                                        <div class="form-text small text-muted">يجب أن تكون 8 أحرف على الأقل.</div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="confirm-password" class="form-label small fw-semibold text-muted">تأكيد كلمة المرور الجديدة</label>
+                                        <input type="password" class="form-control bg-light border-0" id="confirm-password" required minlength="8" dir="ltr">
+                                    </div>
+                                    <button type="submit" class="btn btn-premium w-100 d-flex justify-content-center align-items-center gap-2" id="save-password-btn">
+                                        <span>حفظ كلمة المرور</span>
+                                        <div class="spinner-border spinner-border-sm d-none" id="password-spinner"></div>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Backup & Restore Column -->
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm bg-white p-4 h-100">
+                                <h5 class="fw-bold text-dark mb-4 border-bottom pb-3">
+                                    <i class="fa-solid fa-database text-accent me-2"></i>النسخ الاحتياطي والاستعادة
+                                </h5>
+                                <div class="d-flex flex-column gap-3 mb-4">
+                                    <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2" id="export-json-btn">
+                                        <i class="fa-solid fa-file-code"></i> تصدير JSON
+                                    </button>
+                                    <button class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2 py-2" id="export-xlsx-btn">
+                                        <i class="fa-solid fa-file-excel"></i> تصدير Excel
+                                    </button>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-2 small">استعادة البيانات</h6>
+                                <input type="file" id="import-file" class="form-control mb-3" accept=".json, .xlsx">
+                                <button class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2" id="import-btn">
+                                    <i class="fa-solid fa-upload"></i> استيراد (يستبدل الحالية)
+                                </button>
                             </div>
                         </div>
                     </div>

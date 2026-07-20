@@ -622,3 +622,46 @@ h1, h2, h3, h4, h5, h6, .brand-font {
     margin-right: auto !important;
     margin-left: 0 !important;
 }
+
+/* Unavailable Products */
+.unavailable-product {
+    opacity: 0.65;
+    filter: grayscale(80%);
+    pointer-events: none; /* Disables interaction */
+    position: relative;
+}
+
+.unavailable-product .product-image-container {
+    position: relative;
+}
+
+.unavailable-product .product-image-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 8px 8px 0 0;
+}
+
+.badge-unavailable {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #343a40;
+    color: #fff;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 4px;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 1px solid #495057;
+}
+
+[dir="rtl"] .badge-unavailable {
+    left: auto;
+    right: 10px;
+}

@@ -32,94 +32,11 @@ const translations = {
     }
 };
 
-// Fallback Mock Data for demo/offline preview if API hasn't been set up yet
-const mockProducts = [
-    {
-        name_en: "Espresso",
-        name_ar: "اسبريسو",
-        category: "coffee",
-        price: 2500,
-        image: "https://images.unsplash.com/photo-151097252790b-af4f42df8e40?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: true
-    },
-    {
-        name_en: "Spanish Latte",
-        name_ar: "سبانش لاتيه",
-        category: "coffee",
-        price: 3800,
-        image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: true
-    },
-    {
-        name_en: "Cappuccino",
-        name_ar: "كابتشينو",
-        category: "coffee",
-        price: 3200,
-        image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: false
-    },
-    {
-        name_en: "Turkish Coffee",
-        name_ar: "قهوة تركية",
-        category: "hot drinks",
-        price: 2000,
-        image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: false
-    },
-    {
-        name_en: "Hot Chocolate",
-        name_ar: "شوكولاتة ساخنة",
-        category: "hot drinks",
-        price: 3000,
-        image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: false
-    },
-    {
-        name_en: "Iced Caramel Macchiato",
-        name_ar: "كراميل ماكياتو بارد",
-        category: "cold drinks",
-        price: 4200,
-        image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: true
-    },
-    {
-        name_en: "Lemon Mint Juice",
-        name_ar: "عصير ليمون بالنعناع",
-        category: "fresh drinks",
-        price: 1800,
-        image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: false
-    },
-    {
-        name_en: "San Sebastian Cheesecake",
-        name_ar: "سان سيباستيان تشيز كيك",
-        category: "desserts",
-        price: 5500,
-        image: "https://images.unsplash.com/photo-1524351199679-46cddf530c04?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: true
-    },
-    {
-        name_en: "Croissant Supreme",
-        name_ar: "كرواسون سوبريم",
-        category: "food",
-        price: 2800,
-        image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600&auto=format&fit=crop",
-        available: true,
-        bestSeller: false
-    }
-];
 
 const appState = {
     products: [],
     categories: [],
+    settings: {},
     currentLang: "ar",
     searchQuery: ""
 };
@@ -177,6 +94,7 @@ async function fetchMenuData() {
             const data = JSON.parse(cachedStr);
             appState.products = data.products || [];
             appState.categories = data.categories || [];
+            appState.settings = data.settings || {};
         } else {
             // 2. Cache expired or missing -> Fetch from Firebase (1 Read)
             console.log("Fetching fresh menu from Firebase (1 Read)");
@@ -187,6 +105,7 @@ async function fetchMenuData() {
                 const data = docSnap.data();
                 appState.products = data.products || [];
                 appState.categories = data.categories || [];
+                appState.settings = data.settings || {};
                 localStorage.setItem("milano_cached_menu", JSON.stringify(data));
                 localStorage.setItem("milano_cache_time", Date.now().toString());
             }
@@ -205,6 +124,7 @@ async function fetchMenuData() {
             });
         }
         
+        applySettings();
         renderMenu();
         window.scrollTo(0, 0);
         preloader.classList.add("fade-out");
@@ -219,11 +139,8 @@ async function fetchMenuData() {
 function renderMenu() {
     const query = appState.searchQuery.toLowerCase().trim();
     
-    // Filter available products and search query
+    // Filter by search query
     let filteredProducts = appState.products.filter(p => {
-        // Must be available
-        if (!p.available) return false;
-        
         // Match name in en or ar
         if (query) {
             const nameEn = (p.name_en || '').toLowerCase();
@@ -367,10 +284,14 @@ function renderMenu() {
                 priceHtml = `<div class="product-price">${Number(p.price||0).toLocaleString('en-US')} ${currency}</div>`;
             }
             
+            const unavailableBadge = p.available ? '' : `<div class="badge-unavailable">${isAr ? 'غير متوفر حالياً' : 'Currently Unavailable'}</div>`;
+            const unavailableClass = p.available ? '' : 'unavailable-product';
+            
             cardCol.innerHTML = `
-                <div class="product-card">
+                <div class="product-card ${unavailableClass}">
                     <div class="product-image-container">
-                        ${p.bestSeller ? `<span class="badge-bestseller">${translations[appState.currentLang].bestSeller}</span>` : ''}
+                        ${p.bestSeller && p.available ? `<span class="badge-bestseller">${translations[appState.currentLang].bestSeller}</span>` : ''}
+                        ${unavailableBadge}
                         <img src="${p.image}" alt="${p.name_en || ''}" class="product-image" loading="lazy" 
                              onerror="this.src='https://images.unsplash.com/photo-1507133750040-4a8f57021571?q=80&w=300&auto=format&fit=crop'">
                     </div>
@@ -496,5 +417,65 @@ function setupScrollHighlight() {
                 }
             });
         }
+    }
+}
+
+function applySettings() {
+    const s = appState.settings;
+    if (!s) return;
+    const isAr = appState.currentLang === 'ar';
+
+    const brandName = isAr ? (s.name_ar || "Milano Cafe") : (s.name_en || "Milano Cafe");
+    const address = isAr ? (s.address_ar || "امدرمان - شارع النيل") : (s.address_en || "Omdurman - Nile St");
+
+    // Title & Meta
+    document.title = brandName;
+    
+    // Texts
+    const titleEls = document.querySelectorAll('.brand-font, .preload-title, .footer-brand');
+    titleEls.forEach(el => el.textContent = brandName);
+
+    const addressEl = document.getElementById("footer-address");
+    if (addressEl) addressEl.textContent = address;
+
+    // Logos
+    if (s.logo) {
+        document.querySelectorAll('.hero-logo, .preload-logo').forEach(img => {
+            img.src = s.logo;
+        });
+    }
+
+    // Phones
+    const contactList = document.querySelector('.list-unstyled');
+    if (contactList && s.phones && s.phones.length > 0) {
+        // Find the index to insert before address
+        const listItems = contactList.querySelectorAll('li');
+        let addressHtml = "";
+        if(listItems.length > 0) {
+            addressHtml = listItems[listItems.length - 1].outerHTML;
+        }
+
+        contactList.innerHTML = "";
+        s.phones.forEach(phone => {
+            const li = document.createElement("li");
+            li.className = "mb-2";
+            li.innerHTML = `<i class="fa-solid fa-phone me-2 text-accent"></i><a href="tel:${phone}" class="footer-link" dir="ltr">${phone}</a>`;
+            contactList.appendChild(li);
+        });
+        
+        if (addressHtml) {
+            contactList.insertAdjacentHTML('beforeend', addressHtml);
+            document.getElementById("footer-address").textContent = address;
+        }
+    }
+
+    // Socials
+    const followDiv = document.querySelector('.col-md-4.text-center.text-md-end > div');
+    if (followDiv) {
+        followDiv.innerHTML = "";
+        if (s.instagram) followDiv.innerHTML += `<a href="${s.instagram}" target="_blank" class="footer-social-icon"><i class="fa-brands fa-instagram"></i></a>`;
+        if (s.facebook) followDiv.innerHTML += `<a href="${s.facebook}" target="_blank" class="footer-social-icon"><i class="fa-brands fa-facebook"></i></a>`;
+        if (s.tiktok) followDiv.innerHTML += `<a href="${s.tiktok}" target="_blank" class="footer-social-icon"><i class="fa-brands fa-tiktok"></i></a>`;
+        if (s.whatsapp) followDiv.innerHTML += `<a href="${s.whatsapp}" target="_blank" class="footer-social-icon"><i class="fa-brands fa-whatsapp"></i></a>`;
     }
 }
